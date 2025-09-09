@@ -1,0 +1,68 @@
+{
+  "name": "n8n-nodes-universal-reranker",
+  "version": "1.0.0",
+  "description": "Universal Reranker Node for n8n - supports vLLM, LocalAI, Infinity, Cohere and custom endpoints",
+  "keywords": [
+    "n8n-community-node-package",
+    "n8n",
+    "reranker",
+    "ai",
+    "rag",
+    "retrieval",
+    "vllm",
+    "localai",
+    "infinity",
+    "cohere"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/dalisys/n8n-nodes-universal-reranker",
+  "author": {
+    "name": "Mohamed-Ali Masmoudi",
+    "email": "contact@masmoudi.dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dalisys/n8n-nodes-universal-reranker.git"
+  },
+  "engines": {
+    "node": ">=18.10",
+    "pnpm": ">=9.1"
+  },
+  "packageManager": "pnpm@9.1.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "format": "prettier nodes credentials --write",
+    "lint": "eslint \"nodes/**/*.ts\" \"credentials/**/*.ts\"",
+    "lintfix": "eslint \"nodes/**/*.ts\" \"credentials/**/*.ts\" --fix",
+    "prepublishOnly": "npm run build && eslint -c .eslintrc.prepublish.js \"nodes/**/*.ts\" \"credentials/**/*.ts\""
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/CohereRerankerApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/UniversalRerankerProvider/UniversalRerankerProvider.node.js",
+      "dist/nodes/UniversalRerankerFlow/UniversalRerankerFlow.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@typescript-eslint/parser": "^8.43.0",
+    "eslint": "^8.0.0",
+    "eslint-plugin-n8n-nodes-base": "^1.16.1",
+    "gulp": "^5.0.1",
+    "n8n-workflow": "1.108.0",
+    "prettier": "^3.3.2",
+    "typescript": "^5.5.3"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "1.108.0"
+  }
+}
