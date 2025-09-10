@@ -45,6 +45,8 @@ Restart n8n after installation.
 - **Top K**: Maximum number of documents to return after reranking
 - **Threshold**: Minimum relevance score (0-1) for returned documents
 - **Include Original Scores**: Whether to preserve original document scores
+- **Enable Caching**: Cache reranking results to improve performance for repeated queries
+- **Cache TTL**: Time to live for cached results in minutes (1-60, default: 5)
 
 ### Cohere Models
 - `rerank-v3.5` (default)
@@ -52,101 +54,14 @@ Restart n8n after installation.
 - `rerank-multilingual-v3.0`
 - Custom: Enter any specific Cohere model name
 
+## Caching
+
+Both nodes support optional caching to reduce API calls and improve performance. Caching is disabled by default and can be enabled per node.
+
+
 ## Usage Examples
 
-### Provider Node with PGVector
-
-```json
-{
-  "name": "PGVector + Universal Reranker Provider",
-  "nodes": [
-    {
-      "parameters": {},
-      "name": "Manual Trigger",
-      "type": "n8n-nodes-base.manualTrigger"
-    },
-    {
-      "parameters": {},
-      "name": "Embeddings OpenAI",
-      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi"
-    },
-    {
-      "parameters": {
-        "mode": "load",
-        "tableName": "n8n_vectors",
-        "prompt": "What is n8n?",
-        "topK": 3
-      },
-      "name": "Vector Store (PGVector)",
-      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector"
-    },
-    {
-      "parameters": {
-        "service": "openai-compatible",
-        "endpoint": "http://localhost:7997/rerank",
-        "model": "BAAI/bge-reranker-v2-m3",
-        "topK": 3
-      },
-      "name": "Universal Reranker Provider",
-      "type": "n8n-nodes-universal-reranker.universalRerankerProvider"
-    }
-  ],
-  "connections": {
-    "Manual Trigger": {
-      "main": [["Vector Store (PGVector)"]]
-    },
-    "Embeddings OpenAI": {
-      "ai_embedding": [["Vector Store (PGVector)"]]
-    },
-    "Universal Reranker Provider": {
-      "ai_reranker": [["Vector Store (PGVector)"]]
-    }
-  }
-}
-```
-
-### Flow Node Usage
-
-```json
-{
-  "name": "Flow Reranker Example",
-  "nodes": [
-    {
-      "parameters": {},
-      "name": "Manual Trigger",
-      "type": "n8n-nodes-base.manualTrigger"
-    },
-    {
-      "parameters": {
-        "mode": "raw",
-        "jsonOutput": "{\n  \"query\": \"What is n8n?\",\n  \"documents\": [\n    \"n8n is a workflow automation tool.\",\n    \"Bananas are yellow.\",\n    \"n8n lets you connect apps without code.\"\n  ]\n}"
-      },
-      "name": "Prepare Input",
-      "type": "n8n-nodes-base.set"
-    },
-    {
-      "parameters": {
-        "service": "openai-compatible",
-        "endpoint": "http://localhost:7997/rerank",
-        "model": "BAAI/bge-reranker-v2-m3",
-        "query": "={{ $json.query }}",
-        "documentsField": "documents",
-        "topK": 2
-      },
-      "name": "Universal Reranker",
-      "type": "n8n-nodes-universal-reranker.universalRerankerFlow"
-    }
-  ],
-  "connections": {
-    "Manual Trigger": {
-      "main": [["Prepare Input"]]
-    },
-    "Prepare Input": {
-      "main": [["Universal Reranker"]]
-    }
-  }
-}
-```
+See [EXAMPLES.md](EXAMPLES.md) for detailed usage examples and configurations.
 
 ## Docker Networking
 
@@ -193,6 +108,26 @@ Output includes:
 - `_rerankScore`: Relevance score from reranking service
 - `_originalIndex`: Original position in input array
 - `_originalScore`: Original document score (if `includeOriginalScores` is true)
+
+## Development
+
+### Testing
+The package includes a comprehensive test suite with 78+ tests covering:
+- Core reranking functionality
+- Caching behavior
+- Error handling and edge cases
+- Both node types (Provider and Flow)
+
+```bash
+# Run tests
+pnpm test
+
+# Run tests with coverage
+pnpm run test:coverage
+
+# Build and test
+pnpm run prepublishOnly
+```
 
 ## Contributing
 

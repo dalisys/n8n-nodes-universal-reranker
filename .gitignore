@@ -49,3 +49,4 @@ temp/
 
 .history/
 code_from_n8n_repo/
+coverage/
