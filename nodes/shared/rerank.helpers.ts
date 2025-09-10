@@ -1,5 +1,63 @@
 import { IExecuteFunctions, NodeApiError, NodeOperationError, JsonObject } from 'n8n-workflow';
 
+interface CacheEntry {
+  results: any[];
+  timestamp: number;
+}
+
+const rerankCache = new Map<string, CacheEntry>();
+
+// Export for testing purposes
+export function clearCache(): void {
+  rerankCache.clear();
+}
+
+function createCacheKey(query: string, docs: any[], service: string, model: string): string {
+  const documentTexts = docs.map(d => d?.pageContent || d?.text || d?.content || d?.document || JSON.stringify(d));
+  const docsString = JSON.stringify(documentTexts);
+  
+  // Simple hash function for cache key generation
+  const simpleHash = (str: string): string => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash).toString(36);
+  };
+  
+  const queryHash = simpleHash(query);
+  const docsHash = simpleHash(docsString);
+  return `${service}:${model}:${queryHash}:${docsHash}`;
+}
+
+function getCachedResult(key: string, ttlMinutes: number): any[] | null {
+  const cached = rerankCache.get(key);
+  const ttlMs = ttlMinutes * 60 * 1000;
+  
+  if (cached && Date.now() - cached.timestamp < ttlMs) {
+    return cached.results;
+  }
+  
+  if (cached) {
+    rerankCache.delete(key);
+  }
+  
+  return null;
+}
+
+function setCachedResult(key: string, results: any[]): void {
+  rerankCache.set(key, { results, timestamp: Date.now() });
+  
+  if (rerankCache.size > 1000) {
+    const firstKey = rerankCache.keys().next().value;
+    if (firstKey) {
+      rerankCache.delete(firstKey);
+    }
+  }
+}
+
 function processRerankResults(
   self: IExecuteFunctions,
   results: any[],
@@ -43,9 +101,21 @@ export async function rerankWithOpenAI(
 ): Promise<any[]> {
   const endpoint = this.getNodeParameter('endpoint', itemIndex) as string;
   const model = this.getNodeParameter('model', itemIndex) as string;
+  const enableCache = this.getNodeParameter('enableCache', itemIndex, false) as boolean;
+  const cacheTtl = this.getNodeParameter('cacheTtl', itemIndex, 5) as number;
+
+  if (enableCache) {
+    const cacheKey = createCacheKey(query, docs, 'openai-compatible', model);
+    const cached = getCachedResult(cacheKey, cacheTtl);
+    if (cached) {
+      return cached
+        .filter(doc => doc._rerankScore >= threshold)
+        .slice(0, topK);
+    }
+  }
 
   const documentTexts = docs.map((d) =>
-    d.pageContent || d.text || d.content || d.document || JSON.stringify(d),
+    d?.pageContent || d?.text || d?.content || d?.document || JSON.stringify(d),
   );
 
   try {
@@ -65,7 +135,14 @@ export async function rerankWithOpenAI(
       json: true,
     });
 
-    return processRerankResults(this, response.results, docs, threshold, includeOriginalScores);
+    const results = processRerankResults(this, response.results, docs, threshold, includeOriginalScores);
+    
+    if (enableCache) {
+      const cacheKey = createCacheKey(query, docs, 'openai-compatible', model);
+      setCachedResult(cacheKey, results);
+    }
+    
+    return results;
   } catch (error) {
     const err: any = error;
     if (err?.response?.body) {
@@ -101,9 +178,21 @@ export async function rerankWithCohere(
   const model = cohereModel === 'custom' 
     ? this.getNodeParameter('cohereCustomModel', itemIndex) as string 
     : cohereModel;
+  const enableCache = this.getNodeParameter('enableCache', itemIndex, false) as boolean;
+  const cacheTtl = this.getNodeParameter('cacheTtl', itemIndex, 5) as number;
+
+  if (enableCache) {
+    const cacheKey = createCacheKey(query, docs, 'cohere', model);
+    const cached = getCachedResult(cacheKey, cacheTtl);
+    if (cached) {
+      return cached
+        .filter(doc => doc._rerankScore >= threshold)
+        .slice(0, topK);
+    }
+  }
 
   const documentTexts = docs.map((d) =>
-    d.pageContent || d.text || d.content || d.document || JSON.stringify(d),
+    d?.pageContent || d?.text || d?.content || d?.document || JSON.stringify(d),
   );
 
   try {
@@ -124,7 +213,14 @@ export async function rerankWithCohere(
       json: true,
     });
 
-    return processRerankResults(this, response.results, docs, threshold, includeOriginalScores);
+    const results = processRerankResults(this, response.results, docs, threshold, includeOriginalScores);
+    
+    if (enableCache) {
+      const cacheKey = createCacheKey(query, docs, 'cohere', model);
+      setCachedResult(cacheKey, results);
+    }
+    
+    return results;
   } catch (error) {
     const err: any = error;
     if (err?.response?.body) {

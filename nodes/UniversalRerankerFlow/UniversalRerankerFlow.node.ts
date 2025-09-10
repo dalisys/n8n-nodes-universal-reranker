@@ -165,6 +165,29 @@ export class UniversalRerankerFlow implements INodeType {
 					default: false,
 					description: 'Whether to include original document scores in the output',
 				},
+				{
+					displayName: 'Enable Caching',
+					name: 'enableCache',
+					type: 'boolean',
+					default: false,
+					description: 'Whether to cache reranking results to improve performance for repeated queries',
+				},
+				{
+					displayName: 'Cache TTL (Minutes)',
+					name: 'cacheTtl',
+					type: 'number',
+					default: 5,
+					description: 'Time to live for cached results in minutes',
+					typeOptions: {
+						minValue: 1,
+						maxValue: 60,
+					},
+					displayOptions: {
+						show: {
+							enableCache: [true],
+						},
+					},
+				},
 			],
 		};
 
