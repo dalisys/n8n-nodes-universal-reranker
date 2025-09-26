@@ -33,6 +33,15 @@ export class UniversalRerankerProvider implements INodeType {
 					},
 				},
 			},
+			{
+				name: 'openAiApi',
+				required: false,
+				displayOptions: {
+					show: {
+						service: ['openai-compatible'],
+					},
+				},
+			},
 		],
 		properties: [
 			{

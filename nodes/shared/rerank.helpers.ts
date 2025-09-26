@@ -99,6 +99,13 @@ export async function rerankWithOpenAI(
   itemIndex: number,
   includeOriginalScores: boolean,
 ): Promise<any[]> {
+  let credentials: any = '';
+  try {
+    credentials = await this.getCredentials('openAiApi');
+  } catch (e) {
+    credentials = '';
+  }
+
   const endpoint = this.getNodeParameter('endpoint', itemIndex) as string;
   const model = this.getNodeParameter('model', itemIndex) as string;
   const enableCache = this.getNodeParameter('enableCache', itemIndex, false) as boolean;
@@ -119,13 +126,18 @@ export async function rerankWithOpenAI(
   );
 
   try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    };
+    if (credentials && credentials.apiKey) {
+      headers['Authorization'] = `Bearer ${credentials.apiKey}`;
+    }
+
     const response = await this.helpers.httpRequest({
       method: 'POST',
       url: endpoint,
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
+      headers,
       body: {
         model,
         query,
