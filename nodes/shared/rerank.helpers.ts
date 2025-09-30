@@ -110,6 +110,7 @@ export async function rerankWithOpenAI(
   const model = this.getNodeParameter('model', itemIndex) as string;
   const enableCache = this.getNodeParameter('enableCache', itemIndex, false) as boolean;
   const cacheTtl = this.getNodeParameter('cacheTtl', itemIndex, 5) as number;
+  const enableCustomTemplates = this.getNodeParameter('enableCustomTemplates', itemIndex, false) as boolean;
 
   if (enableCache) {
     const cacheKey = createCacheKey(query, docs, 'openai-compatible', model);
@@ -134,38 +135,134 @@ export async function rerankWithOpenAI(
       headers['Authorization'] = `Bearer ${credentials.apiKey}`;
     }
 
-    const response = await this.helpers.httpRequest({
-      method: 'POST',
-      url: endpoint,
-      headers,
-      body: {
+    let body: any;
+
+    if (enableCustomTemplates) {
+      // Get template configuration
+      const templatePreset = this.getNodeParameter('templatePreset', itemIndex, 'qwen3') as string;
+
+      let queryPrefix: string;
+      let querySuffix: string;
+      let documentPrefix: string;
+      let documentSuffix: string;
+
+      if (templatePreset === 'qwen3') {
+        // Qwen3 Reranker default templates from vLLM
+        queryPrefix = '<|im_start|>system\nJudge whether the Document meets the requirements based on the Query and the Instruct provided. Note that the answer can only be "yes" or "no".<|im_end|>\n<|im_start|>user\n';
+        querySuffix = '';
+        documentPrefix = '';
+        documentSuffix = '<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n';
+      } else {
+        // Custom templates
+        queryPrefix = this.getNodeParameter('queryPrefix', itemIndex, '') as string;
+        querySuffix = this.getNodeParameter('querySuffix', itemIndex, '') as string;
+        documentPrefix = this.getNodeParameter('documentPrefix', itemIndex, '') as string;
+        documentSuffix = this.getNodeParameter('documentSuffix', itemIndex, '') as string;
+      }
+
+      let formattedQuery: string;
+      let formattedDocuments: string[];
+
+      if (templatePreset === 'qwen3') {
+        // Qwen3 specific format with instruction and special tags
+        const instruction = this.getNodeParameter('instruction', itemIndex, 'Given a web search query, retrieve relevant passages that answer the query') as string;
+        formattedQuery = `${queryPrefix}<Instruct>: ${instruction}\n<Query>: ${query}\n${querySuffix}`;
+        formattedDocuments = documentTexts.map(
+          (doc) => `${documentPrefix}<Document>: ${doc}${documentSuffix}`
+        );
+      } else {
+        // Pure custom templates - user has full control
+        formattedQuery = `${queryPrefix}${query}${querySuffix}`;
+        formattedDocuments = documentTexts.map(
+          (doc) => `${documentPrefix}${doc}${documentSuffix}`
+        );
+      }
+
+      // Use the vLLM score endpoint format with text_1 and text_2
+      body = {
+        model,
+        encoding_format: 'float',
+        text_1: formattedQuery,
+        text_2: formattedDocuments,
+      };
+    } else {
+      // Standard OpenAI rerank format
+      body = {
         model,
         query,
         documents: documentTexts,
         top_n: Math.min(topK, docs.length),
-      },
+      };
+    }
+
+    const response = await this.helpers.httpRequest({
+      method: 'POST',
+      url: endpoint,
+      headers,
+      body,
       json: true,
     });
 
-    const results = processRerankResults(this, response.results, docs, threshold, includeOriginalScores);
-    
+    // Handle different response formats
+    let results: any[];
+    if (enableCustomTemplates) {
+      // vLLM score endpoint can return different formats
+      if (Array.isArray(response)) {
+        // Direct array of outputs from vLLM score
+        results = response.map((output: any, index: number) => {
+          const score = output.outputs?.score ?? output.score ?? 0;
+          return {
+            index,
+            relevance_score: score,
+          };
+        });
+      } else if (response.data) {
+        // Response with data field (vLLM score endpoint format)
+        results = response.data.map((item: any) => {
+          const score = typeof item === 'number' ? item : (item.score ?? 0);
+          const index = item.index ?? 0;
+          return {
+            index,
+            relevance_score: score,
+          };
+        });
+      } else if (response.outputs) {
+        // Single output format
+        results = [{
+          index: 0,
+          relevance_score: response.outputs.score ?? 0,
+        }];
+      } else {
+        // Fallback to standard format
+        results = response.results || [];
+      }
+
+      // Sort by score descending and take top_n
+      results.sort((a, b) => b.relevance_score - a.relevance_score);
+      results = results.slice(0, Math.min(topK, docs.length));
+    } else {
+      results = response.results;
+    }
+
+    const processedResults = processRerankResults(this, results, docs, threshold, includeOriginalScores);
+
     if (enableCache) {
       const cacheKey = createCacheKey(query, docs, 'openai-compatible', model);
-      setCachedResult(cacheKey, results);
+      setCachedResult(cacheKey, processedResults);
     }
-    
-    return results;
+
+    return processedResults;
   } catch (error) {
     const err: any = error;
     if (err?.response?.body) {
       throw new NodeApiError(this.getNode(), err, {
         message: `API Error (${err.response.statusCode})`,
-        description: JSON.stringify(err.response.body),
+        description: `Endpoint: ${endpoint}\nResponse: ${JSON.stringify(err.response.body, null, 2)}`,
       });
     }
     throw new NodeApiError(this.getNode(), err as JsonObject, {
       message: 'Request failed',
-      description: (err as Error).message,
+      description: `Endpoint: ${endpoint}\nError: ${(err as Error).message}\nStack: ${(err as Error).stack}`,
     });
   }
 }

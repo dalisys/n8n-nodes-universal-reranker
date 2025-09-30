@@ -68,7 +68,8 @@ export class UniversalRerankerProvider implements INodeType {
 				name: 'endpoint',
 				type: 'string',
 				default: 'http://localhost:8000/v1/rerank',
-				description: 'The reranking endpoint URL',
+				description: 'The reranking endpoint URL. Standard models use /v1/rerank, Qwen3 reranker requires /v1/score.',
+				hint: 'Examples: http://localhost:8000/v1/rerank (standard) or http://localhost:8000/v1/score (Qwen)',
 				displayOptions: {
 					show: {
 						service: ['openai-compatible'],
@@ -84,6 +85,127 @@ export class UniversalRerankerProvider implements INodeType {
 				displayOptions: {
 					show: {
 						service: ['openai-compatible'],
+					},
+				},
+			},
+			{
+				displayName: 'Enable Custom Templates',
+				name: 'enableCustomTemplates',
+				type: 'boolean',
+				default: false,
+				description: 'Enable for special models like Qwen3 Reranker that require chat-format templates. Most standard reranker models (BAAI, Jina, etc.) do not need this.',
+				hint: 'Only enable if your model requires specific prompt formatting',
+				displayOptions: {
+					show: {
+						service: ['openai-compatible'],
+					},
+				},
+			},
+			{
+				displayName: 'Template Preset',
+				name: 'templatePreset',
+				type: 'options',
+				options: [
+					{
+						name: 'Qwen3 Reranker',
+						value: 'qwen3',
+						description: 'Template for Qwen3 reranker models',
+					},
+					{
+						name: 'Custom',
+						value: 'custom',
+						description: 'Define custom templates',
+					},
+				],
+				default: 'qwen3',
+				description: 'Select a template preset or use custom templates',
+				displayOptions: {
+					show: {
+						service: ['openai-compatible'],
+						enableCustomTemplates: [true],
+					},
+				},
+			},
+			{
+				displayName: 'Instruction',
+				name: 'instruction',
+				type: 'string',
+				default: 'Given a web search query, retrieve relevant passages that answer the query',
+				description: 'The instruction for the reranker (used in Qwen3 template)',
+				displayOptions: {
+					show: {
+						service: ['openai-compatible'],
+						enableCustomTemplates: [true],
+						templatePreset: ['qwen3'],
+					},
+				},
+			},
+			{
+				displayName: 'Query Prefix',
+				name: 'queryPrefix',
+				type: 'string',
+				default: '',
+				placeholder: 'e.g., [INST] ',
+				description: 'Text to add before the query. The final format will be: prefix + query + suffix',
+				typeOptions: {
+					rows: 3,
+				},
+				displayOptions: {
+					show: {
+						service: ['openai-compatible'],
+						enableCustomTemplates: [true],
+						templatePreset: ['custom'],
+					},
+				},
+			},
+			{
+				displayName: 'Query Suffix',
+				name: 'querySuffix',
+				type: 'string',
+				default: '',
+				placeholder: 'e.g., [/INST]',
+				description: 'Text to add after the query. The final format will be: prefix + query + suffix',
+				typeOptions: {
+					rows: 2,
+				},
+				displayOptions: {
+					show: {
+						service: ['openai-compatible'],
+						enableCustomTemplates: [true],
+						templatePreset: ['custom'],
+					},
+				},
+			},
+			{
+				displayName: 'Document Prefix',
+				name: 'documentPrefix',
+				type: 'string',
+				default: '',
+				placeholder: 'e.g., [DOC] ',
+				description: 'Text to add before each document. The final format will be: prefix + document + suffix',
+				displayOptions: {
+					show: {
+						service: ['openai-compatible'],
+						enableCustomTemplates: [true],
+						templatePreset: ['custom'],
+					},
+				},
+			},
+			{
+				displayName: 'Document Suffix',
+				name: 'documentSuffix',
+				type: 'string',
+				default: '',
+				placeholder: 'e.g., [/DOC]',
+				description: 'Text to add after each document. The final format will be: prefix + document + suffix',
+				typeOptions: {
+					rows: 2,
+				},
+				displayOptions: {
+					show: {
+						service: ['openai-compatible'],
+						enableCustomTemplates: [true],
+						templatePreset: ['custom'],
 					},
 				},
 			},
