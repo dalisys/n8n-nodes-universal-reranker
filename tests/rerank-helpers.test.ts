@@ -22,6 +22,7 @@ describe('Rerank Helper Functions', () => {
     beforeEach(() => {
       mockExecuteFunctions = createMockExecuteFunctions({
         enableCache: false, // Disable cache for pure unit testing
+        enableCustomTemplates: false, // Standard reranking (no templates)
         endpoint: 'http://localhost:8000/v1/rerank',
         model: 'BAAI/bge-reranker-v2-m3'
       });
