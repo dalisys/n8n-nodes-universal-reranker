@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-universal-reranker",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Universal Reranker Node for n8n - supports vLLM, LocalAI, Infinity, Cohere and custom endpoints",
   "keywords": [
     "n8n-community-node-package",
