@@ -47,6 +47,7 @@ Restart n8n after installation.
 - **Include Original Scores**: Whether to preserve original document scores
 - **Enable Caching**: Cache reranking results to improve performance for repeated queries
 - **Cache TTL**: Time to live for cached results in minutes (1-60, default: 5)
+- **Enable Custom Templates**: For special models like Qwen3 Reranker (see [TEMPLATES.md](TEMPLATES.md))
 
 ### Cohere Models
 - `rerank-v3.5` (default)
@@ -59,9 +60,10 @@ Restart n8n after installation.
 Both nodes support optional caching to reduce API calls and improve performance. Caching is disabled by default and can be enabled per node.
 
 
-## Usage Examples
+## Documentation
 
-See [EXAMPLES.md](EXAMPLES.md) for detailed usage examples and configurations.
+- **[EXAMPLES.md](EXAMPLES.md)** - Usage examples and workflow configurations
+- **[TEMPLATES.md](TEMPLATES.md)** - Custom template guide for special models (Qwen3, etc.)
 
 ## Docker Networking
 
