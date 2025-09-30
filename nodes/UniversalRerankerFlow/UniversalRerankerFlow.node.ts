@@ -109,7 +109,7 @@ export class UniversalRerankerFlow implements INodeType {
 					name: 'enableCustomTemplates',
 					type: 'boolean',
 					default: false,
-					description: 'Enable for special models like Qwen3 Reranker that require chat-format templates. Most standard reranker models (BAAI, Jina, etc.) do not need this.',
+					description: 'Whether to use custom query and document templates for special models like Qwen3 Reranker. Most standard reranker models (BAAI, Jina, etc.) do not need this.',
 					hint: 'Only enable if your model requires specific prompt formatting',
 					displayOptions: {
 						show: {
@@ -163,7 +163,7 @@ export class UniversalRerankerFlow implements INodeType {
 					type: 'string',
 					default: '',
 					placeholder: 'e.g., [INST] ',
-					description: 'Text to add before the query. The final format will be: prefix + query + suffix',
+					description: 'Text to add before the query. The final format will be: prefix + query + suffix.',
 					typeOptions: {
 						rows: 3,
 					},
@@ -181,7 +181,7 @@ export class UniversalRerankerFlow implements INodeType {
 					type: 'string',
 					default: '',
 					placeholder: 'e.g., [/INST]',
-					description: 'Text to add after the query. The final format will be: prefix + query + suffix',
+					description: 'Text to add after the query. The final format will be: prefix + query + suffix.',
 					typeOptions: {
 						rows: 2,
 					},
@@ -199,7 +199,7 @@ export class UniversalRerankerFlow implements INodeType {
 					type: 'string',
 					default: '',
 					placeholder: 'e.g., [DOC] ',
-					description: 'Text to add before each document. The final format will be: prefix + document + suffix',
+					description: 'Text to add before each document. The final format will be: prefix + document + suffix.',
 					displayOptions: {
 						show: {
 							service: ['openai-compatible'],
@@ -214,7 +214,7 @@ export class UniversalRerankerFlow implements INodeType {
 					type: 'string',
 					default: '',
 					placeholder: 'e.g., [/DOC]',
-					description: 'Text to add after each document. The final format will be: prefix + document + suffix',
+					description: 'Text to add after each document. The final format will be: prefix + document + suffix.',
 					typeOptions: {
 						rows: 2,
 					},
