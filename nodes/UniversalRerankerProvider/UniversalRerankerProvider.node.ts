@@ -68,7 +68,7 @@ export class UniversalRerankerProvider implements INodeType {
 				name: 'endpoint',
 				type: 'string',
 				default: 'http://localhost:8000/v1/rerank',
-				description: 'The reranking endpoint URL.',
+				description: 'The reranking endpoint URL',
 				hint: 'Example: http://localhost:8000/v1/rerank',
 				displayOptions: {
 					show: {
