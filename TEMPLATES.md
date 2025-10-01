@@ -32,7 +32,7 @@ vllm serve Qwen/Qwen3-Reranker-4B \
 ```
 
 **Configuration:**
-- **Endpoint**: `http://localhost:7997/v1/score` (NOT `/v1/rerank`)
+- **Endpoint**: `http://localhost:7997/v1/rerank` 
 - **Model**: `Qwen/Qwen3-Reranker-4B` (or other Qwen3 reranker variant)
 - **Template Preset**: `Qwen3 Reranker`
 - **Instruction**: Customize or use default
@@ -135,47 +135,41 @@ Document Suffix:  </s>
 
 ## Endpoint Requirements
 
-Different template configurations may require different endpoints:
+All templates use the **standard `/v1/rerank` endpoint**:
 
-| Template Type | Typical Endpoint | API Format |
-|---------------|------------------|------------|
-| Standard (no templates) | `/v1/rerank` | OpenAI rerank format |
-| Qwen3 Preset | `/v1/score` | vLLM score format |
-| Custom | Depends on model | Check model docs |
+| Template Type | Endpoint | How it Works |
+|---------------|----------|--------------|
+| Standard (no templates) | `/v1/rerank` | Raw query and documents |
+| Qwen3 Preset | `/v1/rerank` | Templated query and documents |
+| Custom | `/v1/rerank` | Your custom formatted text |
 
-**Standard format (`/v1/rerank`):**
+**Request format (same for all):**
 ```json
 {
   "model": "model-name",
   "query": "query text",
-  "documents": ["doc1", "doc2"]
+  "documents": ["doc1", "doc2"],
+  "top_n": 5
 }
 ```
 
-**vLLM score format (`/v1/score`):**
-```json
-{
-  "model": "model-name",
-  "text_1": "formatted query",
-  "text_2": ["formatted doc1", "formatted doc2"]
-}
-```
+Templates simply wrap your text before sending - they don't change the API format.
 
 ## Troubleshooting
 
 ### Empty Results
 
 If you get no reranked documents:
-1. Check that your endpoint is correct (`/v1/score` for Qwen, `/v1/rerank` for standard)
-2. Enable debug logging to see the actual API response
+1. Check that your endpoint is correct (`/v1/rerank`)
+2. Verify the server is running with proper configuration
 3. Test the endpoint directly with curl
 
 ### Bad Request (400)
 
 Common causes:
-- Wrong endpoint for the template type
-- Server not configured properly (Qwen requires `--task score`)
+- Server not configured properly (Qwen requires `--task score` parameter)
 - Incorrect template format for the model
+- Model doesn't support the rerank API
 
 ### Model Not Responding
 

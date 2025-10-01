@@ -68,8 +68,8 @@ export class UniversalRerankerProvider implements INodeType {
 				name: 'endpoint',
 				type: 'string',
 				default: 'http://localhost:8000/v1/rerank',
-				description: 'The reranking endpoint URL. Standard models use /v1/rerank, Qwen3 reranker requires /v1/score.',
-				hint: 'Examples: http://localhost:8000/v1/rerank (standard) or http://localhost:8000/v1/score (Qwen)',
+				description: 'The reranking endpoint URL.',
+				hint: 'Example: http://localhost:8000/v1/rerank',
 				displayOptions: {
 					show: {
 						service: ['openai-compatible'],
