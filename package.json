@@ -31,7 +31,7 @@
   "packageManager": "pnpm@9.1.0",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && gulp build",
     "dev": "tsc --watch",
     "format": "prettier nodes credentials --write",
     "lint": "eslint \"nodes/**/*.ts\" \"credentials/**/*.ts\"",
