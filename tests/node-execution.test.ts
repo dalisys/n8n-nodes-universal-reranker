@@ -32,10 +32,12 @@ describe('UniversalRerankerFlow Node Execution', () => {
 
     test('should have all required properties defined', () => {
       const propertyNames = node.description.properties.map(p => p.name);
-      
+
       expect(propertyNames).toContain('query');
       expect(propertyNames).toContain('documentsField');
       expect(propertyNames).toContain('service');
+      expect(propertyNames).toContain('authType');
+      expect(propertyNames).toContain('cohereEndpoint');
       expect(propertyNames).toContain('topK');
       expect(propertyNames).toContain('threshold');
       expect(propertyNames).toContain('enableCache');

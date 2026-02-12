@@ -254,6 +254,38 @@ export class UniversalRerankerProvider implements INodeType {
 				},
 			},
 			{
+				displayName: 'Authentication Type',
+				name: 'authType',
+				type: 'options',
+				options: [
+					{
+						name: 'Bearer Token',
+						value: 'bearer',
+						description: 'Use Authorization: Bearer header (default for most providers)',
+					},
+					{
+						name: 'API Key Header',
+						value: 'api-key',
+						description: 'Use api-key header (required for Azure AI Foundry)',
+					},
+				],
+				default: 'bearer',
+				description: 'The authentication method to use when calling the API',
+			},
+			{
+				displayName: 'Cohere Endpoint',
+				name: 'cohereEndpoint',
+				type: 'string',
+				default: 'https://api.cohere.ai/v1/rerank',
+				description: 'The Cohere rerank endpoint URL. Override for Azure AI Foundry or other custom deployments.',
+				hint: 'Example for Azure: https://{resource}.services.ai.azure.com/providers/cohere/v2/rerank',
+				displayOptions: {
+					show: {
+						service: ['cohere'],
+					},
+				},
+			},
+			{
 				displayName: 'Top K',
 				name: 'topK',
 				type: 'number',

@@ -459,4 +459,157 @@ describe('Rerank Helper Functions', () => {
       });
     });
   });
+
+  describe('Azure AI Foundry Authentication (api-key header)', () => {
+    describe('OpenAI-compatible with api-key auth', () => {
+      let mockExecuteFunctions: any;
+
+      beforeEach(() => {
+        mockExecuteFunctions = createMockExecuteFunctions({
+          enableCache: false,
+          enableCustomTemplates: false,
+          endpoint: 'https://myresource.services.ai.azure.com/v1/rerank',
+          model: 'BAAI/bge-reranker-v2-m3',
+          authType: 'api-key',
+        });
+        mockExecuteFunctions.getCredentials.mockImplementation((type: string) => {
+          if (type === 'openAiApi') {
+            return Promise.resolve({ apiKey: 'azure-api-key-123' });
+          }
+          return Promise.reject(new Error(`Unknown credential type: ${type}`));
+        });
+      });
+
+      test('should use api-key header instead of Bearer when authType is api-key', async () => {
+        mockExecuteFunctions.helpers.httpRequest.mockResolvedValue(mockOpenAIResponse);
+
+        await rerankWithOpenAI.call(
+          mockExecuteFunctions,
+          mockQuery,
+          mockDocuments,
+          5,
+          0.0,
+          0,
+          false
+        );
+
+        const call = mockExecuteFunctions.helpers.httpRequest.mock.calls[0][0];
+        expect(call.headers['api-key']).toBe('azure-api-key-123');
+        expect(call.headers['Authorization']).toBeUndefined();
+      });
+
+      test('should use Bearer header when authType is bearer (default)', async () => {
+        mockExecuteFunctions.getNodeParameter.mockImplementation((param: string, _index?: number, defaultValue?: any) => {
+          const params: Record<string, any> = {
+            enableCache: false,
+            enableCustomTemplates: false,
+            endpoint: 'http://localhost:8000/v1/rerank',
+            model: 'test-model',
+            authType: 'bearer',
+          };
+          return params[param] !== undefined ? params[param] : defaultValue;
+        });
+
+        mockExecuteFunctions.helpers.httpRequest.mockResolvedValue(mockOpenAIResponse);
+
+        await rerankWithOpenAI.call(
+          mockExecuteFunctions,
+          mockQuery,
+          mockDocuments,
+          5,
+          0.0,
+          0,
+          false
+        );
+
+        const call = mockExecuteFunctions.helpers.httpRequest.mock.calls[0][0];
+        expect(call.headers['Authorization']).toBe('Bearer azure-api-key-123');
+        expect(call.headers['api-key']).toBeUndefined();
+      });
+    });
+
+    describe('Cohere with api-key auth and custom endpoint', () => {
+      let mockExecuteFunctions: any;
+
+      beforeEach(() => {
+        mockExecuteFunctions = createMockExecuteFunctions({
+          enableCache: false,
+          cohereModel: 'custom',
+          cohereCustomModel: 'Cohere-rerank-v4.0-pro',
+          authType: 'api-key',
+          cohereEndpoint: 'https://myresource.services.ai.azure.com/providers/cohere/v2/rerank',
+        });
+      });
+
+      test('should use api-key header and custom endpoint for Azure Cohere', async () => {
+        mockExecuteFunctions.helpers.httpRequest.mockResolvedValue(mockCohereResponse);
+
+        await rerankWithCohere.call(
+          mockExecuteFunctions,
+          mockQuery,
+          mockDocuments,
+          5,
+          0.0,
+          0,
+          false
+        );
+
+        const call = mockExecuteFunctions.helpers.httpRequest.mock.calls[0][0];
+        expect(call.url).toBe('https://myresource.services.ai.azure.com/providers/cohere/v2/rerank');
+        expect(call.headers['api-key']).toBe('mock-cohere-api-key');
+        expect(call.headers['Authorization']).toBeUndefined();
+        expect(call.body.model).toBe('Cohere-rerank-v4.0-pro');
+      });
+
+      test('should use default Cohere endpoint when not overridden', async () => {
+        mockExecuteFunctions = createMockExecuteFunctions({
+          enableCache: false,
+          cohereModel: 'rerank-v3.5',
+          authType: 'bearer',
+        });
+
+        mockExecuteFunctions.helpers.httpRequest.mockResolvedValue(mockCohereResponse);
+
+        await rerankWithCohere.call(
+          mockExecuteFunctions,
+          mockQuery,
+          mockDocuments,
+          5,
+          0.0,
+          0,
+          false
+        );
+
+        const call = mockExecuteFunctions.helpers.httpRequest.mock.calls[0][0];
+        expect(call.url).toBe('https://api.cohere.ai/v1/rerank');
+        expect(call.headers['Authorization']).toBe('Bearer mock-cohere-api-key');
+        expect(call.headers['api-key']).toBeUndefined();
+      });
+
+      test('should use Bearer auth with custom endpoint', async () => {
+        mockExecuteFunctions = createMockExecuteFunctions({
+          enableCache: false,
+          cohereModel: 'rerank-v3.5',
+          authType: 'bearer',
+          cohereEndpoint: 'https://custom-cohere-proxy.example.com/v1/rerank',
+        });
+
+        mockExecuteFunctions.helpers.httpRequest.mockResolvedValue(mockCohereResponse);
+
+        await rerankWithCohere.call(
+          mockExecuteFunctions,
+          mockQuery,
+          mockDocuments,
+          5,
+          0.0,
+          0,
+          false
+        );
+
+        const call = mockExecuteFunctions.helpers.httpRequest.mock.calls[0][0];
+        expect(call.url).toBe('https://custom-cohere-proxy.example.com/v1/rerank');
+        expect(call.headers['Authorization']).toBe('Bearer mock-cohere-api-key');
+      });
+    });
+  });
 });

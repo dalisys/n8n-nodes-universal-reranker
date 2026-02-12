@@ -67,9 +67,23 @@ describe('UniversalRerankerProvider Node', () => {
 
     test('should include cache parameters', () => {
       const propertyNames = provider.description.properties.map(p => p.name);
-      
+
       expect(propertyNames).toContain('enableCache');
       expect(propertyNames).toContain('cacheTtl');
+    });
+
+    test('should include authentication type and Cohere endpoint parameters', () => {
+      const propertyNames = provider.description.properties.map(p => p.name);
+
+      expect(propertyNames).toContain('authType');
+      expect(propertyNames).toContain('cohereEndpoint');
+
+      const authTypeProp = provider.description.properties.find(p => p.name === 'authType');
+      expect(authTypeProp?.default).toBe('bearer');
+
+      const cohereEndpointProp = provider.description.properties.find(p => p.name === 'cohereEndpoint');
+      expect(cohereEndpointProp?.default).toBe('https://api.cohere.ai/v1/rerank');
+      expect(cohereEndpointProp?.displayOptions?.show?.service).toEqual(['cohere']);
     });
 
     test('should have cache TTL parameter only visible when caching enabled', () => {

@@ -108,6 +108,7 @@ export async function rerankWithOpenAI(
 
   const endpoint = this.getNodeParameter('endpoint', itemIndex) as string;
   const model = this.getNodeParameter('model', itemIndex) as string;
+  const authType = this.getNodeParameter('authType', itemIndex, 'bearer') as string;
   const enableCache = this.getNodeParameter('enableCache', itemIndex, false) as boolean;
   const cacheTtl = this.getNodeParameter('cacheTtl', itemIndex, 5) as number;
   const enableCustomTemplates = this.getNodeParameter('enableCustomTemplates', itemIndex, false) as boolean;
@@ -132,7 +133,11 @@ export async function rerankWithOpenAI(
       Accept: 'application/json',
     };
     if (credentials && credentials.apiKey) {
-      headers['Authorization'] = `Bearer ${credentials.apiKey}`;
+      if (authType === 'api-key') {
+        headers['api-key'] = credentials.apiKey;
+      } else {
+        headers['Authorization'] = `Bearer ${credentials.apiKey}`;
+      }
     }
 
     // Format query and documents with templates if enabled
@@ -237,9 +242,11 @@ export async function rerankWithCohere(
     credentials = await this.getCredentials('cohereRerankerApi');
   }
   const cohereModel = this.getNodeParameter('cohereModel', itemIndex) as string;
-  const model = cohereModel === 'custom' 
-    ? this.getNodeParameter('cohereCustomModel', itemIndex) as string 
+  const model = cohereModel === 'custom'
+    ? this.getNodeParameter('cohereCustomModel', itemIndex) as string
     : cohereModel;
+  const authType = this.getNodeParameter('authType', itemIndex, 'bearer') as string;
+  const cohereEndpoint = this.getNodeParameter('cohereEndpoint', itemIndex, 'https://api.cohere.ai/v1/rerank') as string;
   const enableCache = this.getNodeParameter('enableCache', itemIndex, false) as boolean;
   const cacheTtl = this.getNodeParameter('cacheTtl', itemIndex, 5) as number;
 
@@ -258,14 +265,20 @@ export async function rerankWithCohere(
   );
 
   try {
+    const cohereHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    };
+    if (authType === 'api-key') {
+      cohereHeaders['api-key'] = credentials.apiKey;
+    } else {
+      cohereHeaders['Authorization'] = `Bearer ${credentials.apiKey}`;
+    }
+
     const response = await this.helpers.httpRequest({
       method: 'POST',
-      url: 'https://api.cohere.ai/v1/rerank',
-      headers: {
-        Authorization: `Bearer ${credentials.apiKey}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
+      url: cohereEndpoint,
+      headers: cohereHeaders,
       body: {
         model,
         query,
@@ -288,12 +301,12 @@ export async function rerankWithCohere(
     if (err?.response?.body) {
       throw new NodeApiError(this.getNode(), err, {
         message: `Cohere API Error (${err.response.statusCode})`,
-        description: JSON.stringify(err.response.body),
+        description: `Endpoint: ${cohereEndpoint}\nResponse: ${JSON.stringify(err.response.body)}`,
       });
     }
     throw new NodeApiError(this.getNode(), err as JsonObject, {
       message: 'Cohere request failed',
-      description: (err as Error).message,
+      description: `Endpoint: ${cohereEndpoint}\nError: ${(err as Error).message}`,
     });
   }
 }
