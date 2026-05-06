@@ -164,6 +164,63 @@ describe('Cache Functionality', () => {
       // Should make two API calls (different cache keys)
       expect(mockExecuteFunctions.helpers.httpRequest).toHaveBeenCalledTimes(2);
     });
+
+    test('should generate different cache keys for different OpenAI-compatible endpoints and auth types', async () => {
+      mockExecuteFunctions.helpers.httpRequest
+        .mockResolvedValueOnce(mockOpenAIResponse)
+        .mockResolvedValueOnce(mockOpenAIResponse)
+        .mockResolvedValueOnce(mockOpenAIResponse);
+
+      await rerankWithOpenAI.call(
+        mockExecuteFunctions,
+        mockQuery,
+        mockDocuments,
+        10,
+        0.0,
+        0,
+        false
+      );
+
+      mockExecuteFunctions.getNodeParameter.mockImplementation((param: string, _itemIndex?: number, defaultValue?: any) => {
+        if (param === 'model') return 'test-model';
+        if (param === 'enableCache') return true;
+        if (param === 'cacheTtl') return 5;
+        if (param === 'endpoint') return 'https://resource.services.ai.azure.com/providers/cohere/v2/rerank';
+        if (param === 'authenticationType') return 'apiKey';
+        return defaultValue;
+      });
+
+      await rerankWithOpenAI.call(
+        mockExecuteFunctions,
+        mockQuery,
+        mockDocuments,
+        10,
+        0.0,
+        0,
+        false
+      );
+
+      mockExecuteFunctions.getNodeParameter.mockImplementation((param: string, _itemIndex?: number, defaultValue?: any) => {
+        if (param === 'model') return 'test-model';
+        if (param === 'enableCache') return true;
+        if (param === 'cacheTtl') return 5;
+        if (param === 'endpoint') return 'https://resource.services.ai.azure.com/providers/cohere/v2/rerank';
+        if (param === 'authenticationType') return 'bearer';
+        return defaultValue;
+      });
+
+      await rerankWithOpenAI.call(
+        mockExecuteFunctions,
+        mockQuery,
+        mockDocuments,
+        10,
+        0.0,
+        0,
+        false
+      );
+
+      expect(mockExecuteFunctions.helpers.httpRequest).toHaveBeenCalledTimes(3);
+    });
   });
 
   describe('Cache TTL (Time To Live)', () => {

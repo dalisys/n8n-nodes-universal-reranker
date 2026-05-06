@@ -108,12 +108,13 @@ export async function rerankWithOpenAI(
 
   const endpoint = this.getNodeParameter('endpoint', itemIndex) as string;
   const model = this.getNodeParameter('model', itemIndex) as string;
+  const authenticationType = this.getNodeParameter('authenticationType', itemIndex, 'bearer') as string;
   const enableCache = this.getNodeParameter('enableCache', itemIndex, false) as boolean;
   const cacheTtl = this.getNodeParameter('cacheTtl', itemIndex, 5) as number;
   const enableCustomTemplates = this.getNodeParameter('enableCustomTemplates', itemIndex, false) as boolean;
 
   if (enableCache) {
-    const cacheKey = createCacheKey(query, docs, 'openai-compatible', model);
+    const cacheKey = createCacheKey(query, docs, `openai-compatible:${endpoint}:${authenticationType}`, model);
     const cached = getCachedResult(cacheKey, cacheTtl);
     if (cached) {
       return cached
@@ -131,8 +132,11 @@ export async function rerankWithOpenAI(
       'Content-Type': 'application/json',
       Accept: 'application/json',
     };
-    if (credentials && credentials.apiKey) {
+
+    if (credentials && credentials.apiKey && authenticationType === 'bearer') {
       headers['Authorization'] = `Bearer ${credentials.apiKey}`;
+    } else if (credentials && credentials.apiKey && authenticationType === 'apiKey') {
+      headers['api-key'] = credentials.apiKey;
     }
 
     // Format query and documents with templates if enabled
@@ -200,7 +204,7 @@ export async function rerankWithOpenAI(
     const processedResults = processRerankResults(this, results, docs, threshold, includeOriginalScores);
 
     if (enableCache) {
-      const cacheKey = createCacheKey(query, docs, 'openai-compatible', model);
+      const cacheKey = createCacheKey(query, docs, `openai-compatible:${endpoint}:${authenticationType}`, model);
       setCachedResult(cacheKey, processedResults);
     }
 

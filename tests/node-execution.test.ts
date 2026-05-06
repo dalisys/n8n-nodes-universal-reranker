@@ -36,10 +36,20 @@ describe('UniversalRerankerFlow Node Execution', () => {
       expect(propertyNames).toContain('query');
       expect(propertyNames).toContain('documentsField');
       expect(propertyNames).toContain('service');
+      expect(propertyNames).toContain('authenticationType');
       expect(propertyNames).toContain('topK');
       expect(propertyNames).toContain('threshold');
       expect(propertyNames).toContain('enableCache');
       expect(propertyNames).toContain('cacheTtl');
+    });
+
+    test('should expose OpenAI-compatible authentication options', () => {
+      const authenticationType = node.description.properties.find(p => p.name === 'authenticationType');
+
+      expect(authenticationType).toBeDefined();
+      expect(authenticationType?.default).toBe('bearer');
+      expect(authenticationType?.displayOptions?.show?.service).toEqual(['openai-compatible']);
+      expect((authenticationType?.options as any[])?.map(option => option.value)).toEqual(['bearer', 'apiKey', 'none']);
     });
 
     test('should have correct credential configuration', () => {

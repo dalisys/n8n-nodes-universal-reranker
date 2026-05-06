@@ -26,6 +26,12 @@ describe('Rerank Helper Functions', () => {
         endpoint: 'http://localhost:8000/v1/rerank',
         model: 'BAAI/bge-reranker-v2-m3'
       });
+      mockExecuteFunctions.getCredentials.mockImplementation((type: string) => {
+        if (type === 'openAiApi') {
+          return Promise.resolve({ apiKey: 'mock-openai-api-key' });
+        }
+        return Promise.reject(new Error(`Unknown credential type: ${type}`));
+      });
     });
 
     test('should make correct API call with proper parameters', async () => {
@@ -47,6 +53,7 @@ describe('Rerank Helper Functions', () => {
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
+          Authorization: 'Bearer mock-openai-api-key',
         },
         body: {
           model: 'BAAI/bge-reranker-v2-m3',
@@ -62,6 +69,76 @@ describe('Rerank Helper Functions', () => {
         },
         json: true,
       });
+    });
+
+    test('should send api-key header when API key authentication is selected', async () => {
+      mockExecuteFunctions = createMockExecuteFunctions({
+        authenticationType: 'apiKey',
+        enableCache: false,
+        enableCustomTemplates: false,
+        endpoint: 'https://resource.services.ai.azure.com/providers/cohere/v2/rerank',
+        model: 'Cohere-rerank-v4.0-pro'
+      });
+      mockExecuteFunctions.getCredentials.mockResolvedValue({ apiKey: 'azure-foundry-key' });
+      mockExecuteFunctions.helpers.httpRequest.mockResolvedValue(mockOpenAIResponse);
+
+      await rerankWithOpenAI.call(
+        mockExecuteFunctions,
+        mockQuery,
+        mockDocuments,
+        5,
+        0.5,
+        0,
+        false
+      );
+
+      const call = mockExecuteFunctions.helpers.httpRequest.mock.calls[0][0];
+      expect(call.headers).toMatchObject({
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'api-key': 'azure-foundry-key',
+      });
+      expect(call.headers.Authorization).toBeUndefined();
+      expect(call.body).toMatchObject({
+        model: 'Cohere-rerank-v4.0-pro',
+        query: mockQuery,
+        top_n: 5,
+      });
+      expect(call.body.documents).toHaveLength(mockDocuments.length);
+    });
+
+    test('should not send auth headers when authentication is disabled', async () => {
+      mockExecuteFunctions = createMockExecuteFunctions({
+        authenticationType: 'none',
+        enableCache: false,
+        enableCustomTemplates: false,
+        endpoint: 'http://localhost:8000/v1/rerank',
+        model: 'BAAI/bge-reranker-v2-m3'
+      });
+      mockExecuteFunctions.getCredentials.mockResolvedValue({ apiKey: 'unused-key' });
+      mockExecuteFunctions.helpers.httpRequest.mockResolvedValue(mockOpenAIResponse);
+
+      await rerankWithOpenAI.call(
+        mockExecuteFunctions,
+        mockQuery,
+        mockDocuments,
+        5,
+        0.5,
+        0,
+        false
+      );
+
+      const call = mockExecuteFunctions.helpers.httpRequest.mock.calls[0][0];
+      expect(call.headers).toEqual({
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      });
+      expect(call.body).toMatchObject({
+        model: 'BAAI/bge-reranker-v2-m3',
+        query: mockQuery,
+        top_n: 5,
+      });
+      expect(call.body.documents).toHaveLength(mockDocuments.length);
     });
 
     test('should process document text fields in correct priority order', async () => {

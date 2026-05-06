@@ -37,9 +37,22 @@ Restart n8n after installation.
 - **OpenAI-Compatible**: Works with vLLM, LocalAI, Infinity, and custom endpoints
   - Set Endpoint URL (e.g., `http://localhost:7997/rerank`)
   - Set Model name (e.g., `BAAI/bge-reranker-v2-m3`)
+  - Set Authentication Type:
+    - **Bearer Token** for OpenAI-compatible API key authentication
+    - **API Key Header** for Azure AI Foundry endpoints that require `api-key`
+    - **None** for local services without authentication
 - **Cohere**: Uses Cohere's rerank API
   - Select from predefined models or choose "Custom" for specific models
   - Requires Cohere API credentials
+
+### Azure AI Foundry
+
+Use **OpenAI-Compatible** mode for Azure AI Foundry Cohere rerank deployments:
+
+- Endpoint URL: `https://{resource}.services.ai.azure.com/providers/cohere/v2/rerank`
+- Model: `Cohere-rerank-v4.0-pro`
+- Authentication Type: **API Key Header**
+- Credential: configure the existing OpenAI API credential with your Azure AI Foundry API key
 
 ### Parameters
 - **Top K**: Maximum number of documents to return after reranking

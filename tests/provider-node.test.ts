@@ -70,6 +70,16 @@ describe('UniversalRerankerProvider Node', () => {
       
       expect(propertyNames).toContain('enableCache');
       expect(propertyNames).toContain('cacheTtl');
+      expect(propertyNames).toContain('authenticationType');
+    });
+
+    test('should expose OpenAI-compatible authentication options', () => {
+      const authenticationType = provider.description.properties.find(p => p.name === 'authenticationType');
+
+      expect(authenticationType).toBeDefined();
+      expect(authenticationType?.default).toBe('bearer');
+      expect(authenticationType?.displayOptions?.show?.service).toEqual(['openai-compatible']);
+      expect((authenticationType?.options as any[])?.map(option => option.value)).toEqual(['bearer', 'apiKey', 'none']);
     });
 
     test('should have cache TTL parameter only visible when caching enabled', () => {

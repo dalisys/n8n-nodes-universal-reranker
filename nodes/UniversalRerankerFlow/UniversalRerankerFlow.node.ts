@@ -105,6 +105,35 @@ export class UniversalRerankerFlow implements INodeType {
 					},
 				},
 				{
+					displayName: 'Authentication Type',
+					name: 'authenticationType',
+					type: 'options',
+					options: [
+						{
+							name: 'Bearer Token',
+							value: 'bearer',
+							description: 'Send the API key as an Authorization bearer token',
+						},
+						{
+							name: 'API Key Header',
+							value: 'apiKey',
+							description: 'Send the API key in the api-key header for Azure AI Foundry and similar endpoints',
+						},
+						{
+							name: 'None',
+							value: 'none',
+							description: 'Do not send an authentication header',
+						},
+					],
+					default: 'bearer',
+					description: 'How to authenticate requests to the OpenAI-compatible reranking endpoint',
+					displayOptions: {
+						show: {
+							service: ['openai-compatible'],
+						},
+					},
+				},
+				{
 					displayName: 'Enable Custom Templates',
 					name: 'enableCustomTemplates',
 					type: 'boolean',
